@@ -16,6 +16,11 @@ This project implements a MIDI file server on an ESP32 device. The server allows
 
 The ESP32 MIDI WiFi Server is designed to handle MIDI files, allowing you to manage them wirelessly. The server exposes a REST API that can be accessed via HTTP to perform various operations on the MIDI files stored on the ESP32.
 
+## Config
+The config_template.h shows the two config variable need.
+Create a config.h file in the same folder as config_templage.h and copy the contents.
+Then set the SSID to your network and password accordingly.
+
 ## Features
 
 - **File Upload**: Upload MIDI files to the ESP32.
@@ -37,4 +42,3 @@ The ESP32 MIDI WiFi Server is designed to handle MIDI files, allowing you to man
 
 ```bash
 git clone https://github.com/nobodygitsmypuns/wifi_midi_server_esp
-cd your-repo-name
