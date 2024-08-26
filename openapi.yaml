@@ -1,0 +1,108 @@
+openapi: 3.0.0
+info:
+  title: ESP32 MIDI WiFi Server API
+  description: API for uploading, listing, downloading, and deleting MIDI files on an ESP32.
+  version: 1.0.0
+servers:
+  - url: http://{ESP32_IP}
+    description: Local ESP32 Server
+    variables:
+      ESP32_IP:
+        default: 192.168.1.43
+        description: The IP address of your ESP32
+
+paths:
+  /files:
+    get:
+      summary: List all files
+      description: Retrieve a list of all files stored on the ESP32, including available memory.
+      responses:
+        '200':
+          description: A list of files and available memory.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /upload:
+    post:
+      summary: Upload a MIDI file
+      description: Upload a MIDI file to the ESP32.
+      parameters:
+        - in: query
+          name: filename
+          schema:
+            type: string
+          required: true
+          description: The name of the file to be uploaded.
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: File uploaded successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '507':
+          description: Insufficient storage to upload the file.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /download:
+    get:
+      summary: Download a MIDI file
+      description: Download a MIDI file from the ESP32.
+      parameters:
+        - in: query
+          name: filename
+          schema:
+            type: string
+          required: true
+          description: The name of the file to be downloaded.
+      responses:
+        '200':
+          description: File downloaded successfully.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /delete:
+    delete:
+      summary: Delete a MIDI file
+      description: Delete a MIDI file from the ESP32.
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: true
+          description: The name of the file to be deleted.
+      responses:
+        '200':
+          description: File deleted successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: File not found.
+          content:
+            text/plain:
+              schema:
+                type: string
