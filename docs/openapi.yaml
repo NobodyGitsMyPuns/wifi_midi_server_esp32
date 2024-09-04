@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  title: ESP32 Wi-Fi MIDI Server API
+  description: API for controlling and interacting with an ESP32 device for file management and serial number retrieval.
+  version: 1.0.0
+servers:
+  - url: http://{host}:{port}
+    description: ESP32 Local Server
+    variables:
+      host:
+        default: 192.168.1.100
+      port:
+        default: "80"
+
+paths:
+  /check-ip:
+    get:
+      summary: Check if ESP32 is reachable
+      responses:
+        '200':
+          description: A successful response indicating the ESP32 is reachable.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ESP32 is reachable
+
+  /files:
+    get:
+      summary: List files on ESP32
+      description: Retrieve a list of files stored on the ESP32's LittleFS file system.
+      responses:
+        '200':
+          description: A list of files stored on the ESP32.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  file1.mid
+                  file2.mid
+                  file3.mid
+        '500':
+          description: An error occurred while accessing the file system.
+
+  /delete:
+    delete:
+      summary: Delete a file from ESP32
+      description: Delete a specified file from the ESP32's LittleFS.
+      parameters:
+        - name: name
+          in: query
+          description: The name of the file to delete.
+          required: true
+          schema:
+            type: string
+            example: file1.mid
+      responses:
+        '200':
+          description: File successfully deleted.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: File Deleted
+        '400':
+          description: Name parameter is missing.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Name parameter missing
+        '404':
+          description: File not found.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: File Not Found
+        '500':
+          description: An error occurred while attempting to delete the file.
+
+  /get-otp-sn:
+    get:
+      summary: Get ESP32 Serial Number and OTP (MAC Address)
+      description: Retrieve the ESP32's serial number and its MAC address as a One-Time Password (OTP).
+      responses:
+        '200':
+          description: A JSON object containing the serial number and MAC address.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serialNumber:
+                    type: string
+                    example: ESP32-SN-001
+                  otp:
+                    type: string
+                    example: 84:0D:8E:54:7A:FC
+
+  /upload:
+    post:
+      summary: Upload a file to ESP32
+      description: Uploads a file to the ESP32's LittleFS storage system. The file is saved after sanitizing the filename.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  description: The name of the file to upload.
+                  example: file1.mid
+                plain:
+                  type: string
+                  description: The binary content of the file as a string.
+                  example: "binary_data_here"
+      responses:
+        '200':
+          description: File successfully uploaded.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: File Uploaded file1.mid
+        '400':
+          description: Filename is missing in the request.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Filename missing
+        '500':
+          description: Failed to create or write the file.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Failed to create file for writing
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
