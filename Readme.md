@@ -8,7 +8,7 @@ This project implements a MIDI file server on an ESP32 device. The server allows
 - [Features](#features)
 - [Requirements](#requirements)
 - [Setup](#setup)
-- [API Documentation](#api-documentation)
+- [API Documentation](https://nobodygitsmypuns.github.io/wifi_midi_server_esp32/#/paths/~1upload/post)
 - [Contributing](#contributing)
 - [License](#license)
 
