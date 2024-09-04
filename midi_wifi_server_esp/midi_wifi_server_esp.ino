@@ -3,11 +3,10 @@
 #include <LittleFS.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
-#include "/Users/jesselopez/Documents/Arduino/wifi_midi_server/midi_wifi_server_esp32/midi_wifi_server_esp/config.h"
+#include "config.h"
 const char* serialNumber = "ESP32-SN-001";  // Example serial number
 
 WebServer server(80);
-
 
 // Function to sanitize the filename
 String sanitizeFilename(const String& filename) {
@@ -29,7 +28,6 @@ String sanitizeFilename(const String& filename) {
 
   return sanitized;
 }
-
 
 void setup() {
   Serial.begin(115200);
@@ -60,37 +58,7 @@ void setup() {
     server.send(200, "text/plain", responseMessage);  // Respond with a simple text message
     Serial.println("Received check-ip request, responding with 200 OK.");
   });
-
-  // Route to handle file listing
-  server.on("/files", HTTP_GET, []() {
-    String fileList = "";
-    File root = LittleFS.open("/");
-    File file = root.openNextFile();
-    while (file) {
-      fileList += String(file.name()) + "\n";
-      file = root.openNextFile();
-    }
-    server.send(200, "text/plain", fileList);
-  });
-
-  // Route to handle file deletion
-  server.on("/delete", HTTP_DELETE, []() {
-    if (server.hasArg("name")) {
-      String filename = "/" + server.arg("name");
-      if (LittleFS.remove(filename)) {
-        Serial.println("File deleted successfully");
-
-        // Send a response
-        String response = "File Deleted";
-        server.send(200, "text/plain", response);
-      } else {
-        server.send(404, "text/plain", "File Not Found");
-      }
-    } else {
-      server.send(400, "text/plain", "Name parameter missing");
-    }
-  });
-
+  
   // Handle the /get-otp-sn request
   server.on("/get-otp-sn", HTTP_GET, []() {
     String macAddress = WiFi.macAddress();
@@ -104,34 +72,65 @@ void setup() {
     server.send(200, "application/json", jsonResponse);
   });
   // Route to handle file download
-  server.on("/upload", HTTP_POST, []() {
-    if (server.hasArg("filename")) {
-      String filename = sanitizeFilename("/" + server.arg("filename"));
+  server.on("/downloadSignedMidi", HTTP_POST, []() {
+    if (server.hasArg("url") && server.hasArg("filename")) {
+      String url = server.arg("url");
+      String originalFilename = server.arg("filename");
+      String sanitizedFilename = sanitizeFilename(originalFilename);
 
-      Serial.printf("Attempting to create file: %s\n", filename.c_str());
+      Serial.printf("Signed URL: %s\n", url.c_str());
+      Serial.printf("Downloading from URL: %s\n", url.c_str());
+      Serial.printf("Saving as: %s\n", sanitizedFilename.c_str());
 
-      // Write the binary data to the file
-      size_t len = server.arg("plain").length();
-      File file = LittleFS.open(filename, FILE_WRITE);
-      if (file) {
-        file.write((uint8_t*)server.arg("plain").c_str(), len);
-        file.flush();  // Ensure data is written to storage
+      WiFiClientSecure client;
+      client.setInsecure();  // Disable SSL/TTLS verification
+      HTTPClient http;
+      http.begin(client, url);
+      int httpCode = http.GET();
+
+      if (httpCode == HTTP_CODE_OK) {
+        File file = LittleFS.open(sanitizedFilename, FILE_WRITE);
+        if (!file) {
+          Serial.println("Failed to create file.");
+          server.send(500, "text/plain", "Failed to create file.");
+          return;
+        }
+
+        WiFiClient* stream = http.getStreamPtr();
+        int totalBytesWritten = 0;
+        uint8_t buffer[512];
+        int bytesRead;
+
+        while ((bytesRead = stream->read(buffer, sizeof(buffer))) > 0) {
+          // Print the data to the Serial monitor for debugging
+          Serial.print("Data received: ");
+          for (int i = 0; i < bytesRead; i++) {
+            Serial.print((char)buffer[i]);
+          }
+          Serial.println();
+
+          int bytesWritten = file.write(buffer, bytesRead);
+          totalBytesWritten += bytesWritten;
+          Serial.printf("Read %d bytes, wrote %d bytes\n", bytesRead, bytesWritten);
+        }
         file.close();
 
-        Serial.println("File written successfully");
-
-        // Send a response
-        String response = "File Uploaded: " + filename;
-        server.send(200, "text/plain", response);
+        if (totalBytesWritten > 0) {
+          Serial.println("File downloaded and saved successfully.");
+          server.send(200, "text/plain", "File downloaded and saved successfully.");
+        } else {
+          Serial.println("Failed to write data to file.");
+          server.send(500, "text/plain", "Failed to write data to file.");
+        }
       } else {
-        Serial.println("Failed to create file.");
-        server.send(500, "text/plain", "Failed to create file for writing");
+        Serial.printf("Failed to download file, error: %d\n", httpCode);
+        server.send(500, "text/plain", "Failed to download file.");
       }
+      http.end();
     } else {
-      server.send(400, "text/plain", "Filename missing");
+      server.send(400, "text/plain", "URL or filename missing.");
     }
   });
-
 
   // Start server
   server.begin();
