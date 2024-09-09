@@ -42,3 +42,32 @@ Then set the SSID to your network and password accordingly.
 
 ```bash
 git clone https://github.com/nobodygitsmypuns/wifi_midi_server_esp
+f you just want to rebuild the iOS app after code changes:
+
+bash
+make run-ios
+This will build and run the iOS app without cleaning the project.
+
+If you need to install dependencies after changing package.json or Podfile:
+
+bash
+Copy code
+make install
+If you want to completely rebuild the project from scratch (including cleaning and reinstalling dependencies):
+
+bash
+Copy code
+make rebuild
+If you just need to clean Xcode build artifacts and rerun the iOS app:
+
+bash
+Copy code
+make simple-clean
+If CocoaPods need to be reinstalled (e.g., after changing dependencies in the Podfile):
+
+bash
+Copy code
+make pod-install
+
+
+// todo https://mui.com/material-ui/react-button/

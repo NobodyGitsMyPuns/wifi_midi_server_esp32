@@ -70,6 +70,7 @@ void setup() {
       fileList += String(file.name()) + "\n";
       file = root.openNextFile();
     }
+    Serial.println("Returning file list:"+fileList);
     server.send(200, "text/plain", fileList);
   });
 
